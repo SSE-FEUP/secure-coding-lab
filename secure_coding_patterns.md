@@ -732,85 +732,6 @@ app.get("/preview", async (req, res) => {
 
 ---
 
-## Additional Patterns (Not in OWASP Top 10)
-
-### Fail-Secure Error Handling - ASVS V16.5
-
-```javascript
-// ❌ Authorization fails open on error
-async function checkPermission(userId, resource) {
-  try {
-    const result = await db.query("SELECT role FROM users WHERE id = $1", [userId]);
-    return result.rows[0]?.role === "admin";
-  } catch (err) {
-    return true;  // ❌ fail-open: error → allow
-  }
-}
-```
-
-```javascript
-// ✅ Authorization fails closed on error
-async function checkPermission(userId, resource) {
-  try {
-    const result = await db.query("SELECT role FROM users WHERE id = $1", [userId]);
-    return result.rows[0]?.role === "admin";
-  } catch (err) {
-    console.error("Permission check failed", { userId, err: err.message });
-    return false;  // ✅ fail-closed: error → deny
-  }
-}
-```
-
-**Rule:** In a failure scenario, the system should behave like an overprotective security guard, not an optimistic one.
-
----
-
-### Regular Expression Denial of Service / ReDoS (CWE-1333) - ASVS V15.3
-
-```javascript
-// ❌ Evil regex - exponential backtracking on crafted input
-const EMAIL_REGEX = /^([a-zA-Z0-9]+)+@[a-zA-Z0-9]+\.[a-zA-Z]+$/;
-// Attacker sends: "aaaaaaaaaaaaaaaaaaaaaaaa!"
-```
-
-```javascript
-// ✅ Use a well-tested validation library
-const { isEmail } = require("validator");
-
-if (!isEmail(req.body.email)) {
-  return res.status(400).json({ error: "Invalid email" });
-}
-```
-
-**Rule:** Don't write your own regex for common patterns. Use the `validator` library or `safe-regex` to check for catastrophic backtracking.
-
----
-
-### Mass Assignment (CWE-915) - ASVS V2.2
-
-```javascript
-// ❌ Passing entire request body to database
-app.post("/register", async (req, res) => {
-  const user = await User.create(req.body);
-  // Attacker sends: { "email": "a@b.com", "password": "...", "role": "admin" }
-  res.json(user);
-});
-```
-
-```javascript
-// ✅ Explicitly pick allowed fields
-app.post("/register", async (req, res) => {
-  const { email, password, name } = req.body;  // only allowed fields
-  const hash = await bcrypt.hash(password, 12);
-  const user = await User.create({ email, name, passwordHash: hash, role: "user" });
-  res.json({ id: user.id, email: user.email });
-});
-```
-
-**Rule:** Never spread `req.body` into a model. Explicitly destructure only the fields you expect. Set sensitive defaults (like `role`) server-side.
-
----
-
 ## Quick Reference Table
 
 | OWASP | Vulnerability | CWE | Fix |
@@ -835,9 +756,6 @@ app.post("/register", async (req, res) => {
 | A08 | Prototype Pollution | CWE-1321 | Block `__proto__` / `constructor` keys |
 | A09 | Insufficient Logging | CWE-778 | Structured logging for security events |
 | A10 | SSRF | CWE-918 | URL allowlist + private IP blocking |
-| - | Fail-Open Errors | CWE-636 | Always fail closed (deny on error) |
-| - | ReDoS | CWE-1333 | `validator` library / `safe-regex` |
-| - | Mass Assignment | CWE-915 | Explicit field selection from `req.body` |
 
 ---
 
