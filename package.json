@@ -1,0 +1,17 @@
+{
+  "name": "secure-lab",
+  "version": "1.0.0",
+  "description": "Lab app with intentional security anti-patterns for teaching",
+  "type": "module",
+  "scripts": {
+    "start": "node app.js",
+    "seed": "node seed.js",
+    "reset": "rm -f lab.db && node seed.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7",
+    "morgan": "^1.10.0",
+    "cors": "^2.8.5"
+  }
+}

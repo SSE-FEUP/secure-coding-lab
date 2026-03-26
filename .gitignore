@@ -1,0 +1,5 @@
+node_modules/
+lab.db
+.env
+.DS_Store
+ 
